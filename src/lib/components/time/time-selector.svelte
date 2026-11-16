@@ -3,12 +3,14 @@
 	import { SvelteDate } from 'svelte/reactivity';
 	import { fade } from 'svelte/transition';
 
+	import PauseIcon from '@lucide/svelte/icons/pause';
+	import PlayIcon from '@lucide/svelte/icons/play';
 	import { closestModelRun, domainStep } from '@openmeteo/weather-map-layer';
 	import { mode } from 'mode-watcher';
 	import { toast } from 'svelte-sonner';
 
 	import { timeSelectorActions } from '#lib/stores/keyboard.js';
-	import { desktop, loading } from '#lib/stores/preferences.js';
+	import { autoplay, autoplayLoopSteps, desktop, loading } from '#lib/stores/preferences.js';
 	import { metaJson, modelRunLocked } from '#lib/stores/time.js';
 	import { inProgress, latest, modelRun, now, time } from '#lib/stores/time.js';
 	import { selectedDomain } from '#lib/stores/variables.js';
@@ -17,10 +19,13 @@
 	import * as Select from '#lib/components/ui/select/index.js';
 
 	import {
+		AUTOPLAY_FRAME_HOLD_MS,
 		DAY_NAMES,
+		DEFAULT_AUTOPLAY_LOOP_STEPS,
 		MILLISECONDS_PER_DAY,
 		MILLISECONDS_PER_HOUR,
-		MILLISECONDS_PER_WEEK
+		MILLISECONDS_PER_WEEK,
+		MIN_AUTOPLAY_LOOP_STEPS
 	} from '#lib/constants.js';
 	import { throttle } from '#lib/helpers.js';
 	import { changeOMfileURL } from '#lib/layers.js';
@@ -279,8 +284,11 @@
 		}
 	};
 
-	// updates the selected time and synchronizes with URL and OM file
-	const onDateChange = async (date: Date) => {
+	// updates the selected time and synchronizes with URL and OM file.
+	// Any change not made by autoplay itself is a manual one and pauses playback.
+	const onDateChange = async (date: Date, fromAutoplay = false) => {
+		if (!fromAutoplay && date.getTime() !== $time.getTime()) pause();
+
 		if ($modelRunLocked) {
 			if (date.getTime() < metaFirstTime.getTime()) {
 				toast.warning("Model run locked, can't go before first time");
@@ -305,6 +313,7 @@
 
 	// changes the selected model run and updates available time steps
 	const onModelRunChange = async (step: Date) => {
+		pause();
 		const previousModelRun = $modelRun;
 		const previousLocked = $modelRunLocked;
 		$loading = true;
@@ -372,6 +381,101 @@
 		}
 	};
 
+	// Autoplay: loops over $autoplayLoopSteps timesteps, starting at the time
+	// selected when playback began
+	let playing = $state(false);
+	// Set once playback started on its own, so pausing doesn't restart it
+	let hasAutoStarted = false;
+	let loopStart: Date | undefined;
+	let loopStep = 0;
+	let holdTimer: ReturnType<typeof setTimeout> | undefined;
+	let stopWaitingForFrame: (() => void) | undefined;
+
+	const clearAutoplayTimers = () => {
+		clearTimeout(holdTimer);
+		holdTimer = undefined;
+		stopWaitingForFrame?.();
+		stopWaitingForFrame = undefined;
+	};
+
+	const pause = () => {
+		playing = false;
+		clearAutoplayTimers();
+	};
+
+	const play = () => {
+		clearAutoplayTimers();
+		loopStart = new Date($time);
+		loopStep = 0;
+		playing = true;
+		scheduleAdvance();
+	};
+
+	const togglePlay = () => (playing ? pause() : play());
+
+	// Advances once the shown frame has loaded and stayed on screen for the hold
+	// time. A frame that starts loading again (e.g. a variable change) restarts
+	// the hold.
+	const scheduleAdvance = () => {
+		clearAutoplayTimers();
+		stopWaitingForFrame = loading.subscribe((isLoading) => {
+			if (isLoading) {
+				clearTimeout(holdTimer);
+				holdTimer = undefined;
+			} else if (!holdTimer) {
+				holdTimer = setTimeout(advance, AUTOPLAY_FRAME_HOLD_MS);
+			}
+		});
+	};
+
+	const advance = async () => {
+		clearAutoplayTimers();
+		if (!playing) return;
+		if (disabled || !timeSteps || timeSteps.length === 0) {
+			scheduleAdvance();
+			return;
+		}
+
+		const loopSteps = Math.max(
+			MIN_AUTOPLAY_LOOP_STEPS,
+			Math.floor(Number($autoplayLoopSteps)) || DEFAULT_AUTOPLAY_LOOP_STEPS
+		);
+
+		let target: Date | undefined =
+			loopStep + 1 < loopSteps ? timeSteps[currentIndex + 1] : undefined;
+		if (target) {
+			loopStep++;
+		} else {
+			// Loop end, or the run has no later step: jump back to the start
+			target = loopStart ? findTimeStep(loopStart, timeSteps) : undefined;
+			loopStep = 0;
+		}
+		if (!target) {
+			pause();
+			return;
+		}
+
+		await onDateChange(target, true);
+		if (!playing) return;
+		isScrolling = true;
+		centerDateButton(target);
+		await tick();
+		if (playing) scheduleAdvance();
+	};
+
+	// Starts playback once the run's time steps are known, when autoplay is on.
+	// Turning the setting off pauses, and turning it on again starts playback.
+	$effect(() => {
+		if (!$autoplay) {
+			hasAutoStarted = false;
+			untrack(pause);
+			return;
+		}
+		if (hasAutoStarted || !$metaJson || disabled) return;
+		hasAutoStarted = true;
+		untrack(play);
+	});
+
 	// throttled versions of the navigation functions
 	const throttledPreviousHour = throttle(previousHour, 150);
 	const throttledNextHour = throttle(nextHour, 150);
@@ -391,6 +495,7 @@
 			jumpToCurrentTime,
 			toggleModelRunLock,
 			setLatestModelRun,
+			togglePlay,
 			timeNavigationDisabled: disabled
 		});
 		return () => timeSelectorActions.set({});
@@ -714,6 +819,15 @@
 				{ signal }
 			);
 			dayContainer.addEventListener('scrollend', throttledScrollEndEvent, { signal });
+			// Grabbing the timeline on mobile is manual navigation, so autoplay
+			// must not scroll it away under the finger
+			dayContainer.addEventListener(
+				'pointerdown',
+				() => {
+					if (!desktop.current) pause();
+				},
+				{ signal }
+			);
 			dayContainer.addEventListener(
 				'mousedown',
 				(e) => {
@@ -761,6 +875,7 @@
 
 	onDestroy(() => {
 		if (resizeTimeout) clearTimeout(resizeTimeout);
+		pause();
 		listenerController.abort();
 		resizeObserver?.disconnect();
 		unsubscribeMetaJson();
@@ -994,9 +1109,23 @@
 					? 'background: linear-gradient(to right, rgba(15,15,15,1), rgba(15,15,15,0.95), rgba(15,15,15,0.9), rgba(15,15,15,0.5), rgba(15,15,15,0));'
 					: 'background: linear-gradient(to right, rgba(240,240,240,1), rgba(240,240,240,0.95), rgba(240,240,240,0.9), rgba(240,240,240,0.5), rgba(240,240,240,0));'}
 			class="absolute z-50 h-full flex items-center {desktop.current
-				? '-left-7 w-7 rounded-s-xl bg-glass/75 backdrop-blur-sm'
-				: 'left-0 w-12 backdrop-blur-xxs'}"
+				? '-left-14 w-14 rounded-s-xl bg-glass/75 backdrop-blur-sm'
+				: 'left-0 w-20 backdrop-blur-xxs'}"
 		>
+			<button
+				class="flex items-center justify-center {desktop.current
+					? 'w-7 h-12.5'
+					: 'w-8 h-full'} {disabled ? 'cursor-not-allowed' : 'cursor-pointer'}"
+				onclick={togglePlay}
+				aria-label={playing ? 'Pause' : 'Play'}
+				title={playing ? 'Pause' : 'Play'}
+			>
+				{#if playing}
+					<PauseIcon size={20} />
+				{:else}
+					<PlayIcon size={20} />
+				{/if}
+			</button>
 			<button
 				class="flex items-center {desktop.current ? 'h-12.5  ' : 'top-3.5 w-12 h-full'} {disabled
 					? 'cursor-not-allowed'
@@ -1057,7 +1186,7 @@
 			{#if hoverX || currentDate.getTime() !== $time.getTime()}
 				<div
 					transition:fade={{ duration: 300 }}
-					class="absolute {desktop.current ? '-left-6' : 'left-1.75'} -top-5 text-xs p-1"
+					class="absolute {desktop.current ? '-left-13' : 'left-1.75'} -top-5 text-xs p-1"
 				>
 					UTC{formatUTCOffset($now)}
 					{#if desktop.current}

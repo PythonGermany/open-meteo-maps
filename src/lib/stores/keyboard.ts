@@ -14,6 +14,7 @@ export interface TimeSelectorActions {
 	jumpToCurrentTime?: () => void;
 	toggleModelRunLock?: () => void;
 	setLatestModelRun?: () => void;
+	togglePlay?: () => void;
 	timeNavigationDisabled?: boolean;
 }
 

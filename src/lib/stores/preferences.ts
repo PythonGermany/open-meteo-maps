@@ -11,6 +11,8 @@ import { type Persisted, persisted } from 'svelte-persisted-store';
 
 import {
 	COMPLETE_DEFAULT_VALUES,
+	DEFAULT_AUTOPLAY,
+	DEFAULT_AUTOPLAY_LOOP_STEPS,
 	DEFAULT_CACHE_BLOCK_SIZE_KB,
 	DEFAULT_CACHE_MAX_BYTES_MB,
 	DEFAULT_COLOR_BLEND,
@@ -85,6 +87,14 @@ export const interpolation: Persisted<InterpolationMethod> = persisted<Interpola
 export const colorBlend: Persisted<boolean> = persisted('color_blend', DEFAULT_COLOR_BLEND);
 
 export const opacity = persisted('opacity', DEFAULT_OPACITY);
+
+// Start timeline playback on load
+export const autoplay: Persisted<boolean> = persisted('autoplay', DEFAULT_AUTOPLAY);
+// Number of timesteps the autoplay loop covers before jumping back
+export const autoplayLoopSteps: Persisted<number> = persisted(
+	'autoplay-loop-steps',
+	DEFAULT_AUTOPLAY_LOOP_STEPS
+);
 
 export { cacheBlockSizeKb, cacheMaxBytesMb } from './om-protocol-settings';
 
@@ -164,6 +174,9 @@ export const resetStates = async () => {
 	colorBlend.set(DEFAULT_COLOR_BLEND);
 
 	opacity.set(DEFAULT_OPACITY);
+
+	autoplay.set(DEFAULT_AUTOPLAY);
+	autoplayLoopSteps.set(DEFAULT_AUTOPLAY_LOOP_STEPS);
 
 	cacheBlockSizeKb.set(DEFAULT_CACHE_BLOCK_SIZE_KB);
 	cacheMaxBytesMb.set(DEFAULT_CACHE_MAX_BYTES_MB);
