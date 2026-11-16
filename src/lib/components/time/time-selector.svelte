@@ -9,11 +9,12 @@
 	import { mode } from 'mode-watcher';
 	import { toast } from 'svelte-sonner';
 
+	import { chartSources } from '#lib/stores/chart.js';
 	import { timeSelectorActions } from '#lib/stores/keyboard.js';
 	import { autoplay, autoplayLoopSteps, desktop, loading } from '#lib/stores/preferences.js';
 	import { metaJson, modelRunLocked, playing } from '#lib/stores/time.js';
 	import { inProgress, latest, modelRun, now, time } from '#lib/stores/time.js';
-	import { selectedDomain } from '#lib/stores/variables.js';
+	import { domain, selectedDomain } from '#lib/stores/variables.js';
 
 	import PrefetchButton from '#lib/components/time/prefetch-button.svelte';
 	import * as Select from '#lib/components/ui/select/index.js';
@@ -30,6 +31,7 @@
 	import { throttle } from '#lib/helpers.js';
 	import { changeOMfileURL } from '#lib/layers.js';
 	import { tryGetMetaData } from '#lib/metadata.js';
+	import { prefetchTimeSteps } from '#lib/prefetch.js';
 	import {
 		formatISOWithoutTimezone,
 		formatLocalDate,
@@ -385,7 +387,8 @@
 	// selected when playback began
 	// Set once playback started on its own, so pausing doesn't restart it
 	let hasAutoStarted = false;
-	let loopStart: Date | undefined;
+	// Reactive so a restarted loop prefetches its new range
+	let loopStart: Date | undefined = $state();
 	let loopStep = 0;
 	let holdTimer: ReturnType<typeof setTimeout> | undefined;
 	let stopWaitingForFrame: (() => void) | undefined;
@@ -412,6 +415,32 @@
 
 	const togglePlay = () => ($playing ? pause() : play());
 
+	// The loop length setting, sanitized (it is a free number input)
+	const loopStepCount = (value: number) =>
+		Math.max(MIN_AUTOPLAY_LOOP_STEPS, Math.floor(Number(value)) || DEFAULT_AUTOPLAY_LOOP_STEPS);
+
+	// While playing, downloads the rest of the loop in the background so the
+	// first pass doesn't wait on every frame. Reruns when the loop or chart
+	// changes and is cancelled on pause.
+	$effect(() => {
+		if (!$playing || !loopStart || !$modelRun || !timeSteps) return;
+		const startMs = findTimeStep(loopStart, timeSteps)?.getTime();
+		const startIndex = timeSteps.findIndex((step) => step.getTime() === startMs);
+		if (startIndex < 0) return;
+		// The start frame is loaded by the map itself
+		const steps = timeSteps.slice(startIndex + 1, startIndex + loopStepCount($autoplayLoopSteps));
+		if (steps.length === 0) return;
+
+		const controller = new AbortController();
+		prefetchTimeSteps(steps, {
+			modelRun: $modelRun,
+			domain: $domain,
+			variables: [...new Set($chartSources.map((source) => source.variable))],
+			signal: controller.signal
+		});
+		return () => controller.abort();
+	});
+
 	// Advances once the shown frame has loaded and stayed on screen for the hold
 	// time. A frame that starts loading again (e.g. a variable change) restarts
 	// the hold.
@@ -435,10 +464,7 @@
 			return;
 		}
 
-		const loopSteps = Math.max(
-			MIN_AUTOPLAY_LOOP_STEPS,
-			Math.floor(Number($autoplayLoopSteps)) || DEFAULT_AUTOPLAY_LOOP_STEPS
-		);
+		const loopSteps = loopStepCount($autoplayLoopSteps);
 
 		let target: Date | undefined =
 			loopStep + 1 < loopSteps ? timeSteps[currentIndex + 1] : undefined;
