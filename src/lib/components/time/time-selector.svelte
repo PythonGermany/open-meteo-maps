@@ -12,7 +12,7 @@
 	import { chartSources } from '#lib/stores/chart.js';
 	import { timeSelectorActions } from '#lib/stores/keyboard.js';
 	import { autoplay, autoplayLoopSteps, desktop, loading } from '#lib/stores/preferences.js';
-	import { metaJson, modelRunLocked, playing } from '#lib/stores/time.js';
+	import { loopPrefetching, metaJson, modelRunLocked, playing } from '#lib/stores/time.js';
 	import { inProgress, latest, modelRun, now, time } from '#lib/stores/time.js';
 	import { domain, selectedDomain } from '#lib/stores/variables.js';
 
@@ -433,13 +433,20 @@
 		if (steps.length === 0) return;
 
 		const controller = new AbortController();
+		loopPrefetching.set(true);
 		prefetchTimeSteps(steps, {
 			modelRun: $modelRun,
 			domain: $domain,
 			variables: [...new Set($chartSources.map((source) => source.variable))],
 			signal: controller.signal
+		}).finally(() => {
+			// An aborted run must not clear the flag a newer run has set
+			if (!controller.signal.aborted) loopPrefetching.set(false);
 		});
-		return () => controller.abort();
+		return () => {
+			controller.abort();
+			loopPrefetching.set(false);
+		};
 	});
 
 	// Advances once the shown frame has loaded and stayed on screen for the hold

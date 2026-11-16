@@ -11,7 +11,7 @@
 	import { map } from '#lib/stores/map.js';
 	import { initStoredState, loading, url } from '#lib/stores/preferences.js';
 	import { installRequestCounter } from '#lib/stores/request-counter.js';
-	import { modelRun, playing } from '#lib/stores/time.js';
+	import { loopPrefetching, modelRun, playing } from '#lib/stores/time.js';
 	import { domain, selectedDomain } from '#lib/stores/variables.js';
 
 	import {
@@ -201,8 +201,8 @@
 
 <svelte:document onvisibilitychange={saveLastView} />
 
-<!-- Autoplay loads a frame every step, so the spinner would only flicker -->
-{#if $loading && !$playing}
+<!-- During autoplay the spinner tracks the loop prefetch: per-frame loads would only flicker -->
+{#if $playing ? $loopPrefetching : $loading}
 	<Spinner />
 {/if}
 
