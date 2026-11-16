@@ -1,0 +1,9 @@
+# static-web-server config. The build appends the [[advanced.headers]] rules
+# generated from static/_headers by docker/headers.awk.
+[general]
+host = "::"
+port = 80
+root = "/public"
+compression = true
+
+[advanced]

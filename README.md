@@ -49,7 +49,23 @@ The `data_spatial` tree is served from two places:
 
 ### Cross-origin isolation
 
-The weather-map-layer renders through `SharedArrayBuffer`, which needs cross-origin isolation. The dev and preview servers send the required `COOP`/`COEP` headers via a plugin in `vite.config.ts`; in production the same headers come from `static/_headers` (Cloudflare Pages). If these headers are ever dropped, the app still works but falls back to a slower path that copies data to every worker.
+The weather-map-layer renders through `SharedArrayBuffer`, which needs cross-origin isolation. The dev and preview servers send the required `COOP`/`COEP` headers via a plugin in `vite.config.ts`; in production the same headers come from `static/_headers` (Cloudflare Pages and the Docker image). If these headers are ever dropped, the app still works but falls back to a slower path that copies data to every worker.
+
+### Self-hosting (Docker)
+
+The `Dockerfile` builds the static site and serves it with [static-web-server](https://static-web-server.net) on port 80.
+
+```bash
+docker build -t open-meteo-maps .
+# or straight from git (the build needs .git for its version)
+docker build --build-arg BUILDKIT_CONTEXT_KEEP_GIT_DIR=1 -t open-meteo-maps https://github.com/open-meteo/maps.git#main
+
+docker run --rm -p 8080:80 open-meteo-maps
+```
+
+| Build arg            | Purpose                                                                                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `VITE_DATA_BASE_URI` | Data endpoint (see [Data endpoint](#data-endpoint)). Needed on domains other than `*.open-meteo.com`, e.g. `https://openmeteo.s3.amazonaws.com/data_spatial` |
 
 ### Working on the weather-map-layer locally
 

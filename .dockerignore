@@ -1,0 +1,6 @@
+# .git stays in the context: the build version comes from the commit
+node_modules
+build
+.svelte-kit
+.env
+.env.*
