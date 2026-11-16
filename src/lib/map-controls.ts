@@ -162,12 +162,23 @@ let appliedStyleMode: 'light' | 'dark' = 'light';
 
 export const getAppliedStyleMode = () => appliedStyleMode;
 
+// The default basemap tiles (tiles.open-meteo.com) only allow the origin
+// maps.open-meteo.com. Other hosts set VITE_BASEMAP_TILES_URL to any TileJSON
+// URL in the OpenMapTiles schema, e.g. https://tiles.openfreemap.org/planet.
+const BASEMAP_TILES_URL = import.meta.env.VITE_BASEMAP_TILES_URL;
+
 export const getStyle = async () => {
 	const preferences = get(p);
 	appliedStyleMode = mode.current === 'dark' ? 'dark' : 'light';
 	const style = await fetch(
 		`https://static-assets.open-meteo.com/map-assets/styles/minimal-planet-maps${appliedStyleMode === 'dark' ? '-dark' : ''}${preferences.clipWater ? '-water-clip' : ''}.json`
 	).then((r) => r.json());
+
+	// Replace the whole source: an attribution set in the style would override
+	// the one the TileJSON brings along.
+	if (BASEMAP_TILES_URL && style.sources?.openmaptiles) {
+		style.sources.openmaptiles = { type: 'vector', url: BASEMAP_TILES_URL };
+	}
 
 	return preferences.globe ? { ...style, projection: { type: 'globe' } } : style;
 };

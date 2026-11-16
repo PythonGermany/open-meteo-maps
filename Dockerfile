@@ -10,6 +10,9 @@ FROM node:26.13.1@sha256:e18c3ccdf7d71619990b0e85639f506e2028a95410999cab24cc373
 WORKDIR /src
 # Optional data endpoint override (src/lib/helpers.ts); empty keeps the default
 ARG VITE_DATA_BASE_URI
+# Basemap TileJSON (OpenMapTiles schema, src/lib/map-controls.ts); the default
+# tiles.open-meteo.com only allows the origin maps.open-meteo.com
+ARG VITE_BASEMAP_TILES_URL=https://tiles.openfreemap.org/planet
 COPY . .
 # The build version comes from the commit (vite.config.ts); SvelteKit's update
 # check depends on it

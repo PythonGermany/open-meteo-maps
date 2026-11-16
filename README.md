@@ -63,9 +63,10 @@ docker build --build-arg BUILDKIT_CONTEXT_KEEP_GIT_DIR=1 -t open-meteo-maps http
 docker run --rm -p 8080:80 open-meteo-maps
 ```
 
-| Build arg            | Purpose                                                                                                                                                      |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `VITE_DATA_BASE_URI` | Data endpoint (see [Data endpoint](#data-endpoint)). Needed on domains other than `*.open-meteo.com`, e.g. `https://openmeteo.s3.amazonaws.com/data_spatial` |
+| Build arg                | Purpose                                                                                                                                                                                |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_DATA_BASE_URI`     | Data endpoint (see [Data endpoint](#data-endpoint)). Needed on domains other than `*.open-meteo.com`, e.g. `https://openmeteo.s3.amazonaws.com/data_spatial`                           |
+| `VITE_BASEMAP_TILES_URL` | Basemap TileJSON URL (OpenMapTiles schema). Image default: `https://tiles.openfreemap.org/planet`. Empty falls back to `tiles.open-meteo.com`, which only allows `maps.open-meteo.com` |
 
 ### Working on the weather-map-layer locally
 
