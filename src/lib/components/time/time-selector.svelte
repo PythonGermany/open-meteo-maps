@@ -287,9 +287,10 @@
 	};
 
 	// updates the selected time and synchronizes with URL and OM file.
-	// Any change not made by autoplay itself is a manual one and pauses playback.
-	const onDateChange = async (date: Date, fromAutoplay = false) => {
-		if (!fromAutoplay && date.getTime() !== $time.getTime()) pause();
+	// A change pauses playback unless the caller keeps it playing (autoplay
+	// itself, or a timeline click that restarts the loop).
+	const onDateChange = async (date: Date, keepPlaying = false) => {
+		if (!keepPlaying && date.getTime() !== $time.getTime()) pause();
 
 		if ($modelRunLocked) {
 			if (date.getTime() < metaFirstTime.getTime()) {
@@ -719,7 +720,7 @@
 			);
 			hoursHoverContainer.addEventListener(
 				'click',
-				() => {
+				async () => {
 					if (desktop.current) {
 						let validTime = false;
 						let timeStep =
@@ -748,7 +749,12 @@
 						}
 						if (timeStep) {
 							currentDate = timeStep;
-							onDateChange(timeStep);
+							const wasPlaying = $playing;
+							// Stop the old loop from advancing while the new time loads
+							if (wasPlaying) clearAutoplayTimers();
+							await onDateChange(timeStep, wasPlaying);
+							// Restart the loop at the clicked (possibly clamped) time
+							if (wasPlaying && $playing) play();
 							centerDateButton(timeStep);
 						}
 					}
