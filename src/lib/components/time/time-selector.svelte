@@ -12,7 +12,7 @@
 	import { chartSources } from '#lib/stores/chart.js';
 	import { timeSelectorActions } from '#lib/stores/keyboard.js';
 	import { autoplay, autoplayLoopSteps, desktop, loading } from '#lib/stores/preferences.js';
-	import { metaJson, modelRunLocked, playing } from '#lib/stores/time.js';
+	import { loopPrefetching, metaJson, modelRunLocked, playing } from '#lib/stores/time.js';
 	import { inProgress, latest, modelRun, now, time } from '#lib/stores/time.js';
 	import { domain, selectedDomain } from '#lib/stores/variables.js';
 
@@ -287,9 +287,10 @@
 	};
 
 	// updates the selected time and synchronizes with URL and OM file.
-	// Any change not made by autoplay itself is a manual one and pauses playback.
-	const onDateChange = async (date: Date, fromAutoplay = false) => {
-		if (!fromAutoplay && date.getTime() !== $time.getTime()) pause();
+	// A change pauses playback unless the caller keeps it playing (autoplay
+	// itself, or a timeline click that restarts the loop).
+	const onDateChange = async (date: Date, keepPlaying = false) => {
+		if (!keepPlaying && date.getTime() !== $time.getTime()) pause();
 
 		if ($modelRunLocked) {
 			if (date.getTime() < metaFirstTime.getTime()) {
@@ -432,13 +433,20 @@
 		if (steps.length === 0) return;
 
 		const controller = new AbortController();
+		loopPrefetching.set(true);
 		prefetchTimeSteps(steps, {
 			modelRun: $modelRun,
 			domain: $domain,
 			variables: [...new Set($chartSources.map((source) => source.variable))],
 			signal: controller.signal
+		}).finally(() => {
+			// An aborted run must not clear the flag a newer run has set
+			if (!controller.signal.aborted) loopPrefetching.set(false);
 		});
-		return () => controller.abort();
+		return () => {
+			controller.abort();
+			loopPrefetching.set(false);
+		};
 	});
 
 	// Advances once the shown frame has loaded and stayed on screen for the hold
@@ -719,7 +727,7 @@
 			);
 			hoursHoverContainer.addEventListener(
 				'click',
-				() => {
+				async () => {
 					if (desktop.current) {
 						let validTime = false;
 						let timeStep =
@@ -748,7 +756,12 @@
 						}
 						if (timeStep) {
 							currentDate = timeStep;
-							onDateChange(timeStep);
+							const wasPlaying = $playing;
+							// Stop the old loop from advancing while the new time loads
+							if (wasPlaying) clearAutoplayTimers();
+							await onDateChange(timeStep, wasPlaying);
+							// Restart the loop at the clicked (possibly clamped) time
+							if (wasPlaying && $playing) play();
 							centerDateButton(timeStep);
 						}
 					}
