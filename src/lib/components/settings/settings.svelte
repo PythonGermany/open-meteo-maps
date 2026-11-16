@@ -4,6 +4,7 @@
 	import * as Sheet from '#lib/components/ui/sheet/index.js';
 
 	import ArrowsSettings from './arrows-settings.svelte';
+	import AutoplaySettings from './autoplay-settings.svelte';
 	import CacheSettings from './cache-settings.svelte';
 	import ContourSettings from './contour-settings.svelte';
 	import EndpointSettings from './endpoint-settings.svelte';
@@ -25,6 +26,7 @@
 	>
 		<div class="flex flex-col px-6 pt-12 pb-18 gap-2 min-h-full overflow-y-scroll">
 			<UnitSettings />
+			<AutoplaySettings />
 			<GridSettings />
 			<ArrowsSettings />
 			<ContourSettings />

@@ -39,6 +39,13 @@ export const DEFAULT_INTERPOLATION = 'linear' as const;
 // Interpolate colours between colour-scale breakpoints instead of hard bands.
 export const DEFAULT_COLOR_BLEND = false;
 
+// Timeline autoplay: start playing on load, loop length in timesteps, and how
+// long each loaded frame stays on screen before advancing
+export const DEFAULT_AUTOPLAY = true;
+export const DEFAULT_AUTOPLAY_LOOP_STEPS = 6;
+export const MIN_AUTOPLAY_LOOP_STEPS = 2;
+export const AUTOPLAY_FRAME_HOLD_MS = 1000;
+
 // Cache defaults (in KB and MB for UI display)
 export const DEFAULT_CACHE_BLOCK_SIZE_KB = 64;
 export const DEFAULT_CACHE_MAX_BYTES_MB = 400;
