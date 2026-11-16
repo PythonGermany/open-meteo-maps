@@ -11,7 +11,7 @@
 	import { map } from '#lib/stores/map.js';
 	import { initStoredState, loading, url } from '#lib/stores/preferences.js';
 	import { installRequestCounter } from '#lib/stores/request-counter.js';
-	import { modelRun } from '#lib/stores/time.js';
+	import { modelRun, playing } from '#lib/stores/time.js';
 	import { domain, selectedDomain } from '#lib/stores/variables.js';
 
 	import {
@@ -201,7 +201,8 @@
 
 <svelte:document onvisibilitychange={saveLastView} />
 
-{#if $loading}
+<!-- Autoplay loads a frame every step, so the spinner would only flicker -->
+{#if $loading && !$playing}
 	<Spinner />
 {/if}
 

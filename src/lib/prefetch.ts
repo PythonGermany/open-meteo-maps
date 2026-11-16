@@ -102,10 +102,6 @@ const getTimeStepsInRange = (
 /**
  * Prefetch data for the specified time range.
  *
- * Warms the protocol's block cache for the current viewport across the given
- * timesteps. For a seamless composite the sub-domains the protocol would load
- * are prefetched, so a timestep switch is never a cold start.
- *
  * @param options - The prefetch options with start and end dates
  * @param onProgress - Optional callback for progress updates
  * @returns A promise that resolves to the prefetch result
@@ -127,6 +123,27 @@ export const prefetchData = async (
 			error: 'No time steps available for prefetching'
 		};
 	}
+
+	return prefetchTimeSteps(
+		timeSteps,
+		{ modelRun, domain, variables: [variable], signal },
+		onProgress
+	);
+};
+
+/**
+ * Prefetch the given variables for each of the given timesteps.
+ *
+ * Warms the protocol's block cache for the current viewport. For a seamless
+ * composite the sub-domains the protocol would load are prefetched, so a
+ * timestep switch is never a cold start.
+ */
+export const prefetchTimeSteps = async (
+	timeSteps: Date[],
+	options: { modelRun: Date; domain: string; variables: string[]; signal?: AbortSignal },
+	onProgress?: (progress: PrefetchProgress) => void
+): Promise<PrefetchResult> => {
+	const { modelRun, domain, variables, signal } = options;
 
 	const settings = get(omProtocolSettings);
 	const selected = settings.domainOptions.find((d) => d.value === domain);
@@ -158,18 +175,20 @@ export const prefetchData = async (
 			const validPath = fmtSelectedTime(timeStep);
 			let succeeded = true;
 			for (const concrete of domainsFor(timeStep)) {
-				if (signal?.aborted) return false;
 				const url = `${BASE_URI}/${concrete.value}/${runPath}/${validPath}.om`;
-				try {
-					await omFileReader.prefetchVariable(
-						url,
-						variable,
-						getRanges(concrete.grid, currentBounds),
-						signal
-					);
-				} catch {
-					// Best-effort cache warming: keep going with the other files
-					succeeded = false;
+				for (const variable of variables) {
+					if (signal?.aborted) return false;
+					try {
+						await omFileReader.prefetchVariable(
+							url,
+							variable,
+							getRanges(concrete.grid, currentBounds),
+							signal
+						);
+					} catch {
+						// Best-effort cache warming: keep going with the other files
+						succeeded = false;
+					}
 				}
 			}
 			return succeeded;
