@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount, tick, untrack } from 'svelte';
 	import { SvelteDate } from 'svelte/reactivity';
+	import { derived } from 'svelte/store';
 	import { fade } from 'svelte/transition';
 
 	import PauseIcon from '@lucide/svelte/icons/pause';
@@ -451,11 +452,14 @@
 
 	// Advances once the shown frame has loaded and stayed on screen for the hold
 	// time. A frame that starts loading again (e.g. a variable change) restarts
-	// the hold.
+	// the hold, and a running loop prefetch holds the loop until it finishes.
 	const scheduleAdvance = () => {
 		clearAutoplayTimers();
-		stopWaitingForFrame = loading.subscribe((isLoading) => {
-			if (isLoading) {
+		stopWaitingForFrame = derived(
+			[loading, loopPrefetching],
+			([$isLoading, $isPrefetching]) => $isLoading || $isPrefetching
+		).subscribe((waiting) => {
+			if (waiting) {
 				clearTimeout(holdTimer);
 				holdTimer = undefined;
 			} else if (!holdTimer) {
