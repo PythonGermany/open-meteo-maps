@@ -11,7 +11,7 @@
 
 	import { timeSelectorActions } from '#lib/stores/keyboard.js';
 	import { autoplay, autoplayLoopSteps, desktop, loading } from '#lib/stores/preferences.js';
-	import { metaJson, modelRunLocked } from '#lib/stores/time.js';
+	import { metaJson, modelRunLocked, playing } from '#lib/stores/time.js';
 	import { inProgress, latest, modelRun, now, time } from '#lib/stores/time.js';
 	import { selectedDomain } from '#lib/stores/variables.js';
 
@@ -383,7 +383,6 @@
 
 	// Autoplay: loops over $autoplayLoopSteps timesteps, starting at the time
 	// selected when playback began
-	let playing = $state(false);
 	// Set once playback started on its own, so pausing doesn't restart it
 	let hasAutoStarted = false;
 	let loopStart: Date | undefined;
@@ -399,7 +398,7 @@
 	};
 
 	const pause = () => {
-		playing = false;
+		$playing = false;
 		clearAutoplayTimers();
 	};
 
@@ -407,11 +406,11 @@
 		clearAutoplayTimers();
 		loopStart = new Date($time);
 		loopStep = 0;
-		playing = true;
+		$playing = true;
 		scheduleAdvance();
 	};
 
-	const togglePlay = () => (playing ? pause() : play());
+	const togglePlay = () => ($playing ? pause() : play());
 
 	// Advances once the shown frame has loaded and stayed on screen for the hold
 	// time. A frame that starts loading again (e.g. a variable change) restarts
@@ -430,7 +429,7 @@
 
 	const advance = async () => {
 		clearAutoplayTimers();
-		if (!playing) return;
+		if (!$playing) return;
 		if (disabled || !timeSteps || timeSteps.length === 0) {
 			scheduleAdvance();
 			return;
@@ -456,11 +455,11 @@
 		}
 
 		await onDateChange(target, true);
-		if (!playing) return;
+		if (!$playing) return;
 		isScrolling = true;
 		centerDateButton(target);
 		await tick();
-		if (playing) scheduleAdvance();
+		if ($playing) scheduleAdvance();
 	};
 
 	// Starts playback once the run's time steps are known, when autoplay is on.
@@ -1117,10 +1116,10 @@
 					? 'w-7 h-12.5'
 					: 'w-8 h-full'} {disabled ? 'cursor-not-allowed' : 'cursor-pointer'}"
 				onclick={togglePlay}
-				aria-label={playing ? 'Pause' : 'Play'}
-				title={playing ? 'Pause' : 'Play'}
+				aria-label={$playing ? 'Pause' : 'Play'}
+				title={$playing ? 'Pause' : 'Play'}
 			>
-				{#if playing}
+				{#if $playing}
 					<PauseIcon size={20} />
 				{:else}
 					<PlayIcon size={20} />
