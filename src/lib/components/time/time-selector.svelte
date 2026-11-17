@@ -874,7 +874,7 @@
 		</div>
 		<!-- Model Run Selection Dropdown -->
 		<div
-			class="-top-4.5 h-4.5 z-10 right-0 absolute flex rounded-t-lg items-center px-2 gap-0.5 bg-glass/65 backdrop-blur-sm"
+			class="-top-4.5 h-4.5 z-10 left-1/2 -translate-x-1/2 md:left-auto md:right-0 md:translate-x-0 absolute flex rounded-t-lg items-center px-2 gap-0.5 bg-glass/65 backdrop-blur-sm"
 		>
 			<PrefetchButton />
 
@@ -909,7 +909,7 @@
 				<Select.Content
 					class="left-5 border-none max-h-60 bg-glass/65 backdrop-blur-sm"
 					sideOffset={4}
-					align="end"
+					align={desktop.current ? 'end' : 'center'}
 				>
 					{#if inProgressReferenceTime && $modelRun}
 						<Select.Item
