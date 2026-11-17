@@ -1031,7 +1031,7 @@
 		</div>
 		<!-- Model Run Selection Dropdown -->
 		<div
-			class="-top-4.5 h-4.5 z-10 left-1/2 -translate-x-1/2 md:left-auto md:right-0 md:translate-x-0 absolute flex rounded-t-lg items-center px-2 gap-0.5 bg-glass/65 backdrop-blur-sm"
+			class="model-run-selector -top-4.5 h-4.5 z-10 left-1/2 -translate-x-1/2 md:left-auto md:right-0 md:translate-x-0 absolute flex rounded-t-lg items-center px-2 gap-0.5 bg-glass/65 backdrop-blur-sm"
 		>
 			<PrefetchButton />
 

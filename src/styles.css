@@ -243,6 +243,13 @@
 		bottom: 93px;
 	}
 
+	/* Level with the centered model run selector when there is room to its
+	   right (class toggled in attribution.ts): the attribution's bottom edge
+	   (10px margin) rests on the 80px tall time selector. */
+	.attrib-beside-selector .maplibregl-ctrl-bottom-right {
+		bottom: 70px;
+	}
+
 	.maplibregl-ctrl.maplibregl-ctrl-attrib {
 		margin-right: 5px;
 		/* keep the expanded attribution clear of the scale on the left */
