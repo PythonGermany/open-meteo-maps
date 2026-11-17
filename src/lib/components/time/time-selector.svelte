@@ -12,7 +12,13 @@
 
 	import { chartSources } from '#lib/stores/chart.js';
 	import { timeSelectorActions } from '#lib/stores/keyboard.js';
-	import { autoplay, autoplayLoopSteps, desktop, loading } from '#lib/stores/preferences.js';
+	import {
+		autoplay,
+		autoplayLoopSteps,
+		autoplayStepDurationMs,
+		desktop,
+		loading
+	} from '#lib/stores/preferences.js';
 	import { loopPrefetching, metaJson, modelRunLocked, playing } from '#lib/stores/time.js';
 	import { inProgress, latest, modelRun, now, time } from '#lib/stores/time.js';
 	import { domain, selectedDomain } from '#lib/stores/variables.js';
@@ -21,13 +27,14 @@
 	import * as Select from '#lib/components/ui/select/index.js';
 
 	import {
-		AUTOPLAY_FRAME_HOLD_MS,
 		DAY_NAMES,
 		DEFAULT_AUTOPLAY_LOOP_STEPS,
+		DEFAULT_AUTOPLAY_STEP_DURATION_MS,
 		MILLISECONDS_PER_DAY,
 		MILLISECONDS_PER_HOUR,
 		MILLISECONDS_PER_WEEK,
-		MIN_AUTOPLAY_LOOP_STEPS
+		MIN_AUTOPLAY_LOOP_STEPS,
+		MIN_AUTOPLAY_STEP_DURATION_MS
 	} from '#lib/constants.js';
 	import { throttle } from '#lib/helpers.js';
 	import { changeOMfileURL } from '#lib/layers.js';
@@ -421,6 +428,13 @@
 	const loopStepCount = (value: number) =>
 		Math.max(MIN_AUTOPLAY_LOOP_STEPS, Math.floor(Number(value)) || DEFAULT_AUTOPLAY_LOOP_STEPS);
 
+	// The step duration setting in ms, sanitized the same way
+	const stepDuration = (value: number) =>
+		Math.max(
+			MIN_AUTOPLAY_STEP_DURATION_MS,
+			Math.floor(Number(value)) || DEFAULT_AUTOPLAY_STEP_DURATION_MS
+		);
+
 	// While playing, downloads the rest of the loop in the background so the
 	// first pass doesn't wait on every frame. Reruns when the loop or chart
 	// changes and is cancelled on pause.
@@ -463,7 +477,7 @@
 				clearTimeout(holdTimer);
 				holdTimer = undefined;
 			} else if (!holdTimer) {
-				holdTimer = setTimeout(advance, AUTOPLAY_FRAME_HOLD_MS);
+				holdTimer = setTimeout(advance, stepDuration($autoplayStepDurationMs));
 			}
 		});
 	};
