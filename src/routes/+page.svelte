@@ -36,7 +36,12 @@
 
 	import { unwatchAttributionOverlap, watchAttributionOverlap } from '#lib/attribution.js';
 	import { getChartPreset } from '#lib/chart-presets.js';
-	import { postEmbedderReady, startEmbedderBridge, stopEmbedderBridge } from '#lib/embed.js';
+	import {
+		postEmbedderReady,
+		startEmbedderBridge,
+		startExternalLinkHandler,
+		stopEmbedderBridge
+	} from '#lib/embed.js';
 	import { addOmFileLayers, changeOMfileURL } from '#lib/layers.js';
 	import { addLocationMarker } from '#lib/location.js';
 	import {
@@ -88,6 +93,7 @@
 	});
 
 	onMount(async () => {
+		startExternalLinkHandler();
 		await restoreLastView();
 		$url = new URL(document.location.href);
 		urlParamsToPreferences();
