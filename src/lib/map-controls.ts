@@ -19,6 +19,7 @@ import { domain as d } from '#lib/stores/variables.js';
 
 import { BEFORE_LAYER_RASTER, HILLSHADE_LAYER } from '#lib/constants.js';
 
+import { PersistentAttributionControl } from './attribution';
 import { addOmFileLayers } from './layers';
 import { LOCATION_ZOOM, clearLocation } from './location';
 import { updateUrl } from './url';
@@ -58,7 +59,9 @@ export const createMap = async (container: HTMLElement) => {
 		zoom: location ? LOCATION_ZOOM : gridDomain.grid.zoom,
 		keyboard: false,
 		hash: true,
-		maxPitch: 85
+		maxPitch: 85,
+		// Added in setMapControlSettings, remembering its expanded state
+		attributionControl: false
 	});
 	m.set(map);
 
@@ -80,6 +83,7 @@ export const setMapControlSettings = () => {
 	if (!map) return;
 
 	map.touchZoomRotate.disableRotation();
+	map.addControl(new PersistentAttributionControl());
 	map.addControl(
 		new maplibregl.NavigationControl({ visualizePitch: true, showZoom: true, showCompass: true })
 	);

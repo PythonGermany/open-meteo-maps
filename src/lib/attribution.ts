@@ -1,7 +1,50 @@
 // Raises the map attribution above the time selector when the two would
 // overlap at the bottom of the screen. On wide screens where there is enough
 // room next to the time selector, the attribution stays in the corner.
+import { get } from 'svelte/store';
+
+import * as maplibregl from 'maplibre-gl';
+
 import { browser } from '$app/env';
+
+import { attributionExpanded } from '#lib/stores/preferences.js';
+
+import type { Map } from 'maplibre-gl';
+
+const COMPACT_CLASS = 'maplibregl-compact';
+const SHOW_CLASS = 'maplibregl-compact-show';
+
+/**
+ * MapLibre's attribution control, but it remembers whether the visitor last
+ * expanded or collapsed it, instead of always starting expanded. Only clicks
+ * on the info button count: the collapse MapLibre does on map drag does not.
+ */
+export class PersistentAttributionControl extends maplibregl.AttributionControl {
+	constructor() {
+		super();
+		// MapLibre expands the control when it first turns compact, which
+		// happens once attributions arrive (not necessarily in onAdd).
+		const updateCompact = this._updateCompact;
+		this._updateCompact = () => {
+			const wasCompact = this._container.classList.contains(COMPACT_CLASS);
+			updateCompact();
+			const isCompact = this._container.classList.contains(COMPACT_CLASS);
+			if (!wasCompact && isCompact && !get(attributionExpanded)) {
+				this._container.classList.remove(SHOW_CLASS);
+				this._container.removeAttribute('open');
+			}
+		};
+	}
+
+	onAdd(map: Map): HTMLElement {
+		const container = super.onAdd(map);
+		// Registered after MapLibre's toggle listener, so the class is updated
+		this._compactButton.addEventListener('click', () => {
+			attributionExpanded.set(this._container.classList.contains(SHOW_CLASS));
+		});
+		return container;
+	}
+}
 
 const RAISED_CLASS = 'attrib-raised';
 // The chevron buttons stick out 28px on each side of the time selector's

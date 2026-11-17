@@ -99,6 +99,9 @@ export const localStorageVersion: Persisted<string | undefined> = persisted(
  */
 export const collapsedSettings = persisted<Record<string, boolean>>('settings-collapsed', {});
 
+/** Whether the map attribution (info icon) starts expanded. */
+export const attributionExpanded = persisted('attribution-expanded', true);
+
 export const helpOpen = writable(false);
 
 export const typing = writable(false);
