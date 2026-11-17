@@ -244,10 +244,11 @@
 	}
 
 	/* Level with the centered model run selector when there is room to its
-	   right (class toggled in attribution.ts): the attribution's bottom edge
-	   (10px margin) rests on the 80px tall time selector. */
+	   right (class toggled in attribution.ts). With its 10px bottom margin this
+	   leaves the same 5px gap above the 80px tall time selector as its
+	   margin-right leaves to the screen edge. */
 	.attrib-beside-selector .maplibregl-ctrl-bottom-right {
-		bottom: 70px;
+		bottom: 75px;
 	}
 
 	.maplibregl-ctrl.maplibregl-ctrl-attrib {
