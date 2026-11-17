@@ -38,7 +38,7 @@
 	import { getChartPreset } from '#lib/chart-presets.js';
 	import { postEmbedderReady, startEmbedderBridge, stopEmbedderBridge } from '#lib/embed.js';
 	import { addOmFileLayers, changeOMfileURL } from '#lib/layers.js';
-	import { addLocationMarker } from '#lib/location.js';
+	import { addLocationMarker, watchFavoriteMarkers } from '#lib/location.js';
 	import {
 		addTerrainSource,
 		createMap,
@@ -126,6 +126,7 @@
 			addOmFileLayers();
 			addPopup();
 			addLocationMarker();
+			watchFavoriteMarkers();
 			changeOMfileURL();
 
 			watchAttributionOverlap();

@@ -33,6 +33,11 @@ export interface GeoLocation {
 export const storedRecentLocations = persisted<GeoLocation[]>('recent_locations', []);
 export const storedFavoriteLocations = persisted<GeoLocation[]>('favorite_locations', []);
 
+// A setting, unlike the lists above: reset with the others. Kept out of the
+// URL-synced preferences, a visitor's own favourites mean nothing in a shared link.
+export const DEFAULT_SHOW_FAVORITES_ON_MAP = false;
+export const showFavoritesOnMap = persisted('show_favorites_on_map', DEFAULT_SHOW_FAVORITES_ON_MAP);
+
 const MAX_RECENT_LOCATIONS = 8;
 const MAX_FAVORITE_LOCATIONS = 24;
 
