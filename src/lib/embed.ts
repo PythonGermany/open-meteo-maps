@@ -90,8 +90,37 @@ export const postEmbedderReady = () => {
 	);
 };
 
+// Inside an iframe, a link without a target navigates the frame itself, and
+// most external sites refuse to be framed. Open those links in a new tab
+// instead. Delegated on the document so links inserted later (map
+// attribution) are covered too.
+const onLinkClick = (event: MouseEvent) => {
+	if (event.defaultPrevented || !(event.target instanceof Element)) return;
+	const anchor = event.target.closest<HTMLAnchorElement>('a[href]');
+	if (!anchor || anchor.target) return;
+	if (new URL(anchor.href, location.href).origin === location.origin) return;
+	// The browser's default action then follows the new target
+	anchor.target = '_blank';
+	anchor.rel = 'noopener noreferrer';
+};
+
+let linkListenerController: AbortController | undefined;
+
+// Call as early as possible so links work while the map is still loading.
+export const startExternalLinkHandler = () => {
+	if (!isEmbedded() || linkListenerController) return;
+	linkListenerController = new AbortController();
+	// Capture phase, so it runs before handlers that might navigate themselves
+	document.addEventListener('click', onLinkClick, {
+		capture: true,
+		signal: linkListenerController.signal
+	});
+};
+
 export const stopEmbedderBridge = () => {
 	// also runs after server-side rendering, where window is absent
 	if (!browser) return;
 	window.removeEventListener('message', onEmbedderMessage);
+	linkListenerController?.abort();
+	linkListenerController = undefined;
 };
