@@ -18,15 +18,16 @@
 
 	import { switchPopupMode } from '#lib/popup.js';
 
+	const isEditable = (target: HTMLElement) =>
+		target instanceof HTMLInputElement ||
+		target instanceof HTMLTextAreaElement ||
+		target instanceof HTMLSelectElement ||
+		target.isContentEditable;
+
 	const keyDownEvent = (event: KeyboardEvent) => {
 		// Ignore shortcuts when focus is inside an editable element, except for Escape
 		const target = event.target as HTMLElement;
-		const isEditable =
-			target instanceof HTMLInputElement ||
-			target instanceof HTMLTextAreaElement ||
-			target instanceof HTMLSelectElement ||
-			target.isContentEditable;
-		if (isEditable && event.key !== 'Escape') return;
+		if (isEditable(target) && event.key !== 'Escape') return;
 
 		// Help Dialog and Popup actions
 		if (event.key === 'h') {
@@ -108,20 +109,13 @@
 				'ArrowUp',
 				'c',
 				'm',
-				'n',
-				' '
+				'n'
 			].includes(event.key);
 			if (!isTimeAction) return;
 
-			// Inside overlays Space keeps its native meaning (switches, select options);
-			// everywhere else it wins over whatever button happens to have focus
-			if (event.key === ' ' && target.closest('[role="dialog"], [role="listbox"], [role="menu"]'))
-				return;
-
 			const { timeNavigationDisabled } = get(timeSelectorActions);
 
-			// Play / pause stays available like the play button, which is never disabled
-			if (timeNavigationDisabled && event.key !== 'm' && event.key !== ' ') return;
+			if (timeNavigationDisabled && event.key !== 'm') return;
 
 			const actions = get(timeSelectorActions);
 			if (event.key === 'ArrowLeft')
@@ -133,35 +127,54 @@
 			else if (event.key === 'c') actions.jumpToCurrentTime?.();
 			else if (event.key === 'm') actions.toggleModelRunLock?.();
 			else if (event.key === 'n') actions.setLatestModelRun?.();
-			else if (event.key === ' ') {
-				// Keeps the page from scrolling and the focused button from activating
-				event.preventDefault();
-				spaceHandled = true;
-				// Holding Space would otherwise flip playback on every repeat
-				if (event.repeat) return;
-				actions.togglePlay?.();
-			}
 		}
+	};
+
+	// Play / pause listens in the capture phase: bits-ui triggers (settings,
+	// popovers, selects) act on Space in their own keydown handlers, before a
+	// bubbling listener on window would see it
+	const claimsSpace = (event: KeyboardEvent) => {
+		if (event.key !== ' ') return false;
+		const target = event.target as HTMLElement;
+		if (isEditable(target)) return false;
+		// Inside overlays Space keeps its native meaning (switches, select options)
+		if (target.closest('[role="dialog"], [role="listbox"], [role="menu"]')) return false;
+		return !(get(domainSelectionOpen) || get(variableSelectionOpen));
+	};
+
+	let spaceHandled = false;
+	const spaceKeyDown = (event: KeyboardEvent) => {
+		if (!claimsSpace(event)) return;
+		// Keeps the focused control from reacting and the page from scrolling
+		event.preventDefault();
+		event.stopPropagation();
+		spaceHandled = true;
+		// Holding Space would otherwise flip playback on every repeat
+		if (event.repeat) return;
+		// Stays available like the play button, even while time navigation is disabled
+		get(timeSelectorActions).togglePlay?.();
 	};
 
 	// Firefox activates a focused button on Space keyup, which cancelling the
 	// keydown does not prevent
-	let spaceHandled = false;
-	const keyUpEvent = (event: KeyboardEvent) => {
+	const spaceKeyUp = (event: KeyboardEvent) => {
 		if (event.key !== ' ' || !spaceHandled) return;
 		spaceHandled = false;
 		event.preventDefault();
+		event.stopPropagation();
 	};
 
 	onMount(() => {
 		if (!browser) return;
 		window.addEventListener('keydown', keyDownEvent);
-		window.addEventListener('keyup', keyUpEvent);
+		window.addEventListener('keydown', spaceKeyDown, true);
+		window.addEventListener('keyup', spaceKeyUp, true);
 	});
 
 	onDestroy(() => {
 		if (!browser) return;
 		window.removeEventListener('keydown', keyDownEvent);
-		window.removeEventListener('keyup', keyUpEvent);
+		window.removeEventListener('keydown', spaceKeyDown, true);
+		window.removeEventListener('keyup', spaceKeyUp, true);
 	});
 </script>
