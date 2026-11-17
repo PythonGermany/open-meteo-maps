@@ -8,6 +8,7 @@
 	import CacheSettings from './cache-settings.svelte';
 	import ContourSettings from './contour-settings.svelte';
 	import EndpointSettings from './endpoint-settings.svelte';
+	import FavoriteSettings from './favorite-settings.svelte';
 	import GridSettings from './grid-settings.svelte';
 	import InterpolationSettings from './interpolation-settings.svelte';
 	import OpacitySetting from './opacity-setting.svelte';
@@ -33,6 +34,7 @@
 			<TileSizeSettings />
 			<InterpolationSettings />
 			<PopupSettings />
+			<FavoriteSettings />
 			<WaterClipSetting />
 			<SeamlessBorderSettings />
 			<OpacitySetting />

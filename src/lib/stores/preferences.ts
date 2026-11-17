@@ -27,6 +27,7 @@ import { getInitialMetaData, tryGetMetaData } from '#lib/metadata.js';
 
 import { version } from '../../../package.json';
 import { activeChart, defaultChart } from './chart';
+import { DEFAULT_SHOW_FAVORITES_ON_MAP, showFavoritesOnMap } from './location';
 import { cacheBlockSizeKb, cacheMaxBytesMb, customColorScales } from './om-protocol-settings';
 import { inProgress, latest, metaJson, modelRun, modelRunLocked, now, time } from './time';
 import {
@@ -198,6 +199,9 @@ export const resetStates = async () => {
 	windSpeedUnit.set(DEFAULT_WIND_SPEED_UNIT);
 
 	helpOpen.set(false);
+
+	// The favourites themselves are user data and survive, like saved charts
+	showFavoritesOnMap.set(DEFAULT_SHOW_FAVORITES_ON_MAP);
 
 	setMode('system');
 

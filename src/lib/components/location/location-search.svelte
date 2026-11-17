@@ -4,7 +4,6 @@
 
 	import {
 		type GeoLocation,
-		addRecentLocation,
 		formatCoordinates,
 		locationSearchOpen,
 		removeRecentLocation,
@@ -17,7 +16,7 @@
 	import * as Command from '#lib/components/ui/command/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 
-	import { clearLocation, setLocation } from '#lib/location.js';
+	import { clearLocation, selectGeoLocation } from '#lib/location.js';
 
 	const GEOCODING_URL = 'https://geocoding-api.open-meteo.com/v1/search';
 	// Shorter queries are rejected by the API
@@ -88,12 +87,7 @@
 	});
 
 	const pick = (location: GeoLocation) => {
-		addRecentLocation(location);
-		setLocation({
-			name: location.name,
-			latitude: location.latitude,
-			longitude: location.longitude
-		});
+		selectGeoLocation(location);
 		$locationSearchOpen = false;
 	};
 
