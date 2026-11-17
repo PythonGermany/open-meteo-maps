@@ -7,3 +7,12 @@ root = "/public"
 compression = true
 
 [advanced]
+
+# Cloudflare's default for every asset, so static/_headers (appended below)
+# means the same on both hosts. Without it static-web-server caches pages for a
+# day and version.json for an hour, and installed apps keep booting the old
+# build. Later entries replace a header set by an earlier one.
+[[advanced.headers]]
+source = "/**"
+[advanced.headers.headers]
+Cache-Control = "public, max-age=0, must-revalidate"
