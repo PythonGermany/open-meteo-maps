@@ -108,13 +108,19 @@
 				'ArrowUp',
 				'c',
 				'm',
-				'n'
+				'n',
+				' '
 			].includes(event.key);
 			if (!isTimeAction) return;
 
+			// Space natively activates a focused button or link; toggling on top of
+			// that would fire twice on the play button and hijack every other button
+			if (event.key === ' ' && target.closest('button, a, [role="button"]')) return;
+
 			const { timeNavigationDisabled } = get(timeSelectorActions);
 
-			if (timeNavigationDisabled && event.key !== 'm') return;
+			// Play / pause stays available like the play button, which is never disabled
+			if (timeNavigationDisabled && event.key !== 'm' && event.key !== ' ') return;
 
 			const actions = get(timeSelectorActions);
 			if (event.key === 'ArrowLeft')
@@ -126,6 +132,11 @@
 			else if (event.key === 'c') actions.jumpToCurrentTime?.();
 			else if (event.key === 'm') actions.toggleModelRunLock?.();
 			else if (event.key === 'n') actions.setLatestModelRun?.();
+			else if (event.key === ' ') {
+				// Keeps the page from scrolling
+				event.preventDefault();
+				actions.togglePlay?.();
+			}
 		}
 	};
 

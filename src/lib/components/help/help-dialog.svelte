@@ -61,6 +61,9 @@
 						<div class="flex items-center gap-2">
 							<Kbd.Root>n</Kbd.Root> Latest Model Run
 						</div>
+						<div class="flex items-center gap-2">
+							<Kbd.Root>space</Kbd.Root> Play / Pause
+						</div>
 						<div class="mt-3 flex items-center gap-2">
 							<Kbd.Root>ctrl</Kbd.Root> +
 							<Kbd.Root>←</Kbd.Root> Previous Model Run
