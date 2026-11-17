@@ -113,9 +113,10 @@
 			].includes(event.key);
 			if (!isTimeAction) return;
 
-			// Space natively activates a focused button or link; toggling on top of
-			// that would fire twice on the play button and hijack every other button
-			if (event.key === ' ' && target.closest('button, a, [role="button"]')) return;
+			// Inside overlays Space keeps its native meaning (switches, select options);
+			// everywhere else it wins over whatever button happens to have focus
+			if (event.key === ' ' && target.closest('[role="dialog"], [role="listbox"], [role="menu"]'))
+				return;
 
 			const { timeNavigationDisabled } = get(timeSelectorActions);
 
@@ -133,18 +134,34 @@
 			else if (event.key === 'm') actions.toggleModelRunLock?.();
 			else if (event.key === 'n') actions.setLatestModelRun?.();
 			else if (event.key === ' ') {
-				// Keeps the page from scrolling
+				// Keeps the page from scrolling and the focused button from activating
 				event.preventDefault();
+				spaceHandled = true;
+				// Holding Space would otherwise flip playback on every repeat
+				if (event.repeat) return;
 				actions.togglePlay?.();
 			}
 		}
 	};
 
+	// Firefox activates a focused button on Space keyup, which cancelling the
+	// keydown does not prevent
+	let spaceHandled = false;
+	const keyUpEvent = (event: KeyboardEvent) => {
+		if (event.key !== ' ' || !spaceHandled) return;
+		spaceHandled = false;
+		event.preventDefault();
+	};
+
 	onMount(() => {
-		if (browser) window.addEventListener('keydown', keyDownEvent);
+		if (!browser) return;
+		window.addEventListener('keydown', keyDownEvent);
+		window.addEventListener('keyup', keyUpEvent);
 	});
 
 	onDestroy(() => {
-		if (browser) window.removeEventListener('keydown', keyDownEvent);
+		if (!browser) return;
+		window.removeEventListener('keydown', keyDownEvent);
+		window.removeEventListener('keyup', keyUpEvent);
 	});
 </script>
