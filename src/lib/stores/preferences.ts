@@ -13,6 +13,7 @@ import {
 	COMPLETE_DEFAULT_VALUES,
 	DEFAULT_AUTOPLAY,
 	DEFAULT_AUTOPLAY_LOOP_STEPS,
+	DEFAULT_AUTOPLAY_STEP_DURATION_MS,
 	DEFAULT_CACHE_BLOCK_SIZE_KB,
 	DEFAULT_CACHE_MAX_BYTES_MB,
 	DEFAULT_COLOR_BLEND,
@@ -94,6 +95,11 @@ export const autoplay: Persisted<boolean> = persisted('autoplay', DEFAULT_AUTOPL
 export const autoplayLoopSteps: Persisted<number> = persisted(
 	'autoplay-loop-steps',
 	DEFAULT_AUTOPLAY_LOOP_STEPS
+);
+// How long each loaded frame stays on screen before autoplay advances (ms)
+export const autoplayStepDurationMs: Persisted<number> = persisted(
+	'autoplay-step-duration-ms',
+	DEFAULT_AUTOPLAY_STEP_DURATION_MS
 );
 
 export { cacheBlockSizeKb, cacheMaxBytesMb } from './om-protocol-settings';
@@ -177,6 +183,7 @@ export const resetStates = async () => {
 
 	autoplay.set(DEFAULT_AUTOPLAY);
 	autoplayLoopSteps.set(DEFAULT_AUTOPLAY_LOOP_STEPS);
+	autoplayStepDurationMs.set(DEFAULT_AUTOPLAY_STEP_DURATION_MS);
 
 	cacheBlockSizeKb.set(DEFAULT_CACHE_BLOCK_SIZE_KB);
 	cacheMaxBytesMb.set(DEFAULT_CACHE_MAX_BYTES_MB);

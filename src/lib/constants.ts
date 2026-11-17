@@ -40,11 +40,12 @@ export const DEFAULT_INTERPOLATION = 'linear' as const;
 export const DEFAULT_COLOR_BLEND = false;
 
 // Timeline autoplay: start playing on load, loop length in timesteps, and how
-// long each loaded frame stays on screen before advancing
+// long each loaded frame stays on screen before advancing (step duration)
 export const DEFAULT_AUTOPLAY = true;
 export const DEFAULT_AUTOPLAY_LOOP_STEPS = 6;
 export const MIN_AUTOPLAY_LOOP_STEPS = 2;
-export const AUTOPLAY_FRAME_HOLD_MS = 1000;
+export const DEFAULT_AUTOPLAY_STEP_DURATION_MS = 1000;
+export const MIN_AUTOPLAY_STEP_DURATION_MS = 100;
 
 // Cache defaults (in KB and MB for UI display)
 export const DEFAULT_CACHE_BLOCK_SIZE_KB = 64;
